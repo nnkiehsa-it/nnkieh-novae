@@ -9,7 +9,6 @@ import { timing } from "@/lib/motion-timing";
 import { watchSystemTheme } from "@/lib/theme";
 import { SessionProvider } from "@/hooks/use-session";
 import { TurnstileProvider } from "@/features/security/turnstile";
-import { E2eAuthBridge } from "@/features/system/e2e-auth-bridge";
 import { InstallPrompt } from "@/features/system/install-prompt";
 import { UpdateGate } from "@/features/system/update-gate";
 import { Toaster } from "@/ui/feedback";
@@ -40,7 +39,6 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
             <SessionProvider>
               <React.Suspense fallback={null}>{i18nReady ? children : null}</React.Suspense>
             </SessionProvider>
-            <E2eAuthBridge />
             <UpdateGate />
             <InstallPrompt />
             <Toaster />

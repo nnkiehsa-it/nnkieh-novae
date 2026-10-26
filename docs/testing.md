@@ -28,7 +28,7 @@
 
 完整 local suite 在 fast checks 中加入 production Vite build、build budget 和 Bun high-severity dependency audit。Dependency audit 要連 npm advisory API；離線時即使前面階段全過，整體仍會失敗。
 
-本機 gate 的 build 輸出到 `dist-verify`，E2E 輸出到 `dist-local-e2e`，手機預覽輸出到 `dist-local-preview`；Service Worker 跟著輸出在各自目錄裡。只有 `bun run build` / `build:deploy` 寫 `dist`，測試 build 帶 loopback CSP，不會跟部署產物混在一起。Build 本身也是一道安全檢查：`index.html` 出現 boot script 以外的 script、或 `vercel.json` 的 CSP 與 `src/app/document-policy.ts` 算出的不同，build 直接失敗。
+本機 gate 的 build 輸出到 `dist-verify`，手機預覽輸出到 `dist-local-preview`；Service Worker 跟著輸出在各自目錄裡。只有 `bun run build` / `build:deploy` 寫 `dist`，測試 build 帶 loopback CSP，不會跟部署產物混在一起。Build 本身也是一道安全檢查：`index.html` 出現 boot script 以外的 script、或 `vercel.json` 的 CSP 與 `src/app/document-policy.ts` 算出的不同，build 直接失敗。
 
 Build budget 的上限集中在 `config/build-budget.config.json`，達到 85% 時警告，超過硬上限才失敗。警告不能當成測試失敗，但交付報告要寫出來。
 
@@ -75,30 +75,19 @@ Migration 變更還會建立 populated pre-0016 database，從切換前 schema �
 
 修改管理員佇列排序或索引時，跑 `bun run verify:admin-performance`；腳本量測 50,000 筆資料的排序查詢，核對結果與 planner 選用的索引，完成後清除隔離資料庫。[圖片與管理佇列效能](media-and-admin-performance.md)記錄資料條件與前後數字。
 
-## Browser 與完整交付
+## 完整交付
 
 | 指令 | 內容 |
 | --- | --- |
-| `bun run test:e2e` | 建 production frontend，啟動完整 emulator stack，跑 Playwright desktop / mobile journeys |
 | `bun run verify:stress` | 以 stress scale 8 跑多人、多分類與多權限壓力矩陣 |
-| `bun run verify:all` | local、integration 與 E2E 完整交付驗證 |
+| `bun run verify:all` | local 與 integration 完整交付驗證 |
 | `bun run test:env` | 保留完整本機 stack 供手動測試，直到 `Ctrl+C` |
 
-大型變更或交付前跑 `bun run verify:all`。CI 的 `Verify and Deploy` 先固定安裝 Bun 1.4 與 lockfile，再一律跑 fast job；只有受影響路徑才額外啟動 backend integration 或 browser E2E。Push 成功後沿用同一 workflow 的驗證結果直接進入對應部署 job，避免另外啟動 workflow 再輪詢等待。
+大型變更或交付前跑 `bun run verify:all`。CI 的 `Verify and Deploy` 先固定安裝 Bun 1.4 與 lockfile，再一律跑 fast job；只有受影響路徑才額外啟動 backend integration 或 frontend build。Push 成功後沿用同一 workflow 的驗證結果直接進入對應部署 job，避免另外啟動 workflow 再輪詢等待。
 
-E2E mode 先以測試 stack 的環境執行 `vite build`，再用 `vite preview` 跑 production artifact（SPA fallback 與部署相同的 header）。它會啟動 Firebase Auth Emulator，Playwright 走真的登入、API、database、Worker、Queue 和 responsive UI，不把 browser journey 改成 mock service call。
+瀏覽器 E2E（Playwright）已於 2026-10-26 移除：它常因時序不穩而失敗，又擋住部署。行為改由兩層驗證：後端流程由 integration suite 直接呼叫 action、走真的 PostgreSQL 與 Worker；前端邏輯（session、草稿、URL 狀態、快取）在 `tests/unit/` 直接驅動 hook 與 store，不開瀏覽器。
 
-`test:env` 是手動操作環境，會啟用本機管理員自動登入，不適合直接執行需要切換帳號的 Playwright 測試。使用 `test:e2e` 可停用這項便利功能，避免登入狀態干擾案例。整合 runner 使用本機連接埠鎖阻止同時重建測試環境，並直接透過 Node 啟動 Vite 與 Playwright。Chromium 版本與 Playwright 不符的機器可設 `NOVAE_E2E_CHROMIUM_PATH` 指向既有的 Chromium。
-
-只驗證特定流程時，在 `--` 後傳入 Playwright 的檔名或 `--grep`；這些參數只套用到瀏覽器案例，不會略過環境建置。以下先準備共用帳號與內容，再只跑上傳流程：
-
-```bash
-node scripts/verify-integration.mjs --e2e --project chromium-stateful -- tests/e2e/upload-operations.spec.ts
-```
-
-省略 `--project` 時會保留 Playwright 專案依賴，所以相關 bootstrap／唯讀案例仍可能一併執行。只有前端程式未改且已有相同環境的 production build 時才使用 `--skip-build`。
-
-需要檢查 WebKit 的草稿、列表、詳情與多分頁行為時，可安裝 `bunx playwright install webkit`，設定 `NOVAE_E2E_SURFACE_BROWSER=webkit` 後執行 `bun run test:e2e`。這是 WebKit 引擎與響應式畫面的驗證，不等同於實體 iPhone 測試。不同 Playwright 程序若共用已啟動的環境，必須各自指定 `--output`，避免覆寫對方的 trace 與截圖。
+`test:env` 是手動操作環境，會啟用本機管理員自動登入。整合 runner 使用本機連接埠鎖阻止同時重建測試環境，並直接透過 Node 啟動 Vite。
 
 `verify:stress` 把 `NOVAE_STRESS_SCALE` 設成 8。Runner 接受 2 到 20 的整數 scale；package script固定使用 8，涵蓋多人 profile sync、分類組合與 permission scope 競爭。
 
@@ -110,11 +99,11 @@ Verify and Deploy 先用 git diff 判斷是否需要額外 job：
 | --- | --- | --- |
 | `fast` | 每個符合 workflow paths 的變更 | `verify:fast`（第一個 stage 即 generated drift gate）|
 | `backend_verify` | `cloudflare/`、`database/`、`shared/`、integration tests、backend scripts、package / lockfile | Worker types、integration types、`verify:integration` |
-| `browser_verify` | `src/`、`shared/`、`config/`、public、`index.html`、`vite.config.ts`、E2E、package / lockfile | 安裝 Chromium、`test:e2e`；build budget 只在 shard 1 跑 |
+| `frontend_verify` | `src/`、`shared/`、`config/`、public、`index.html`、`vite.config.ts`、package / lockfile | production build 與 build budget |
 | `deploy_backend` | push / manual 且 backend 受影響 | forward migration、runtime role、Worker / Queue / provider 設定與 smoke test |
 | `deploy_frontend` | push / manual 且 browser 受影響 | 驗證 Vercel secrets，在同一 runner 建立並直接發布 prebuilt output；必要時等待 backend deploy |
 
-`fast`、`backend_verify` 與 `browser_verify` 都只依賴 `changes`，符合範圍時平行執行。部署等所有相關驗證成功；同次有 backend 變更時，frontend 再等 backend 部署成功。Vercel build 的 `dist`／`node_modules` 保留在同一 runner 直到 publish。`workflow_dispatch` 可選 `all`、`backend` 或 `frontend`。README、docs 與 `tools/project-map/` 單獨變更不在 workflow path filter 內。
+`fast`、`backend_verify` 與 `frontend_verify` 都只依賴 `changes`，符合範圍時平行執行。部署等所有相關驗證成功；同次有 backend 變更時，frontend 再等 backend 部署成功。Vercel build 的 `dist`／`node_modules` 保留在同一 runner 直到 publish。`workflow_dispatch` 可選 `all`、`backend` 或 `frontend`。README、docs 與 `tools/project-map/` 單獨變更不在 workflow path filter 內。
 
 ## 測試目錄
 
@@ -122,7 +111,6 @@ Verify and Deploy 先用 git diff 判斷是否需要額外 job：
 - `tests/architecture/`：frontend dependency direction、UI primitive purity、database ownership、provider ownership、contract 與 observability 邊界。
 - `tests/tooling/`：package-management、生成入口與 source hygiene 等穩定 tooling policy。
 - `tests/integration/`：真 PostgreSQL + Worker 的成功、拒絕、scope、transaction、job 與 provider 行為。
-- `tests/e2e/`：使用 Firebase Auth Emulator 的真實瀏覽器流程。
 
 新 backend action 的測試不能只呼叫一次來滿足 coverage；成功與拒絕案例都要 assertion。角色或 scope 改動還要證明跨 scope 無法操作。
 

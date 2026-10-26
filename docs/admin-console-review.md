@@ -45,11 +45,6 @@
 - 七個區域的繁中 1280 px 與 390 px 畫面、保留期限與運行政策編輯畫面，以及活動錯誤和恢復畫面，共 22 張均保存並開啟核對。畫面證據保存在 `.impeccable/review/`；測試資料使用本機資料庫、登入模擬器與外部服務測試環境。
 - Impeccable 獨立介面審查確認分類摘要方向，提出活動摘要能力聲明與分頁錯誤呈現兩項修正；修正後的評分均為 resolved，disposition 為 ship。最後評分僅針對這兩項修正，沒有重新宣稱全面介面審查。
 
-管理畫面與活動錯誤流程可單獨執行，會建立隔離的測試資料與登入環境：
-
-```powershell
-$env:NOVAE_E2E_WORKERS = '4'
-node scripts/verify-integration.mjs --e2e -- --project=chromium-desktop-readonly admin-workspace.spec.ts
-```
+當時的 Playwright 流程已於 2026-10-26 隨瀏覽器 E2E 一併移除，見[測試](testing.md)。
 
 瀏覽器的跨路由返回及強制關閉不提供可取消的導航事件；離開保護涵蓋頁內連結、管理頁返回與帳號編輯器。寫入的一致性由後端交易與版本核對維持。

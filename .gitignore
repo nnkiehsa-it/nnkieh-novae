@@ -29,9 +29,7 @@ firebase-debug.log
 firebase-debug.*.log
 .e2e-env*.log
 .e2e-env.pid
-playwright-report/
 test-results/
-tests/e2e/.auth/
 
 # Local AI / agent tooling and prompts
 /.agents/*

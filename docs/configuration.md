@@ -8,7 +8,7 @@
 | --- | --- | --- |
 | 手動前端開發 | `.env.local` | `vite`（`bun run dev`）/ `vite build` |
 | 手動 Worker 開發 | `cloudflare/.dev.vars` | Wrangler；可從 `.dev.vars.example` 建立 |
-| `test:env` / integration / E2E | Runner 在 child process 注入 | Vite、Worker、Vitest、Playwright |
+| `test:env` / integration | Runner 在 child process 注入 | Vite、Worker、Vitest |
 | `main` production | GitHub `production` Environment | deploy workflows |
 | `dev` preview | GitHub `development` Environment | deploy workflows |
 

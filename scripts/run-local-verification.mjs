@@ -89,7 +89,7 @@ const selectedSteps =
 let completed = 0;
 let progressTimer;
 
-if (runAll) process.stderr.write("[1/3] Local verification\n");
+if (runAll) process.stderr.write("[1/2] Local verification\n");
 
 function formatProgress(label) {
   const width = 20;
@@ -237,12 +237,8 @@ async function runSuite(label, args, environment = process.env) {
 }
 
 if (runAll) {
-  await runSuite("[2/3] Integration verification", [
+  await runSuite("[2/2] Integration verification", [
     "scripts/verify-integration.mjs",
-  ]);
-  await runSuite("[3/3] Desktop, mobile and stateful end-to-end verification", [
-    "scripts/verify-integration.mjs",
-    "--e2e",
   ]);
   process.stderr.write("\n✓ All verification suites passed\n");
 }

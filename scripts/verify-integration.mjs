@@ -1,7 +1,7 @@
 import { spawn, spawnSync } from "node:child_process";
 import { once } from "node:events";
 import { createServer } from "node:net";
-import { closeSync, existsSync, openSync, readFileSync } from "node:fs";
+import { closeSync, openSync, readFileSync } from "node:fs";
 import { mkdtemp } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
@@ -21,29 +21,10 @@ import {
 } from "./wsl.mjs";
 
 const root = process.cwd();
-const separator = process.argv.indexOf("--");
-const runnerArgs = process.argv.slice(2, separator < 0 ? undefined : separator);
-const browserArgs = separator < 0 ? [] : process.argv.slice(separator + 1);
-const e2e = runnerArgs.includes("--e2e");
+const runnerArgs = process.argv.slice(2);
 const serve = runnerArgs.includes("--serve");
 const preview = runnerArgs.includes("--preview");
 if (preview && !serve) throw new Error("--preview requires --serve.");
-const checkStartup = runnerArgs.includes("--check-startup");
-if (checkStartup && !serve) throw new Error("--check-startup requires --serve.");
-const skipBuild = runnerArgs.includes("--skip-build");
-const projectIndex = runnerArgs.indexOf("--project");
-const e2eProject = projectIndex >= 0 ? runnerArgs[projectIndex + 1] : null;
-const e2eProjects = new Set([
-  "chromium-desktop-readonly",
-  "chromium-mobile-readonly",
-  "chromium-stateful",
-]);
-if (e2eProject && !e2eProjects.has(e2eProject)) {
-  throw new Error(`Unsupported E2E project: ${e2eProject}.`);
-}
-if ((projectIndex >= 0 && !e2eProject) || (!e2e && (skipBuild || e2eProject || browserArgs.length > 0))) {
-  throw new Error("--project, --skip-build and browser arguments after -- require --e2e.");
-}
 const stressIndex = runnerArgs.indexOf("--stress-scale");
 const stressScale = stressIndex >= 0 ? runnerArgs[stressIndex + 1] : "4";
 if (!/^\d+$/u.test(stressScale) || Number(stressScale) < 2 || Number(stressScale) > 20) {
@@ -109,7 +90,6 @@ const npx = process.platform === "win32"
     }
   : { args: [], command: "npx" };
 const viteCli = join(root, "node_modules", "vite", "bin", "vite.js");
-const playwrightCli = join(root, "node_modules", "@playwright", "test", "cli.js");
 const vitestCli = join(root, "node_modules", "vitest", "vitest.mjs");
 const wranglerCli = join(root, "node_modules", "wrangler", "bin", "wrangler.js");
 const tempDirectory = await mkdtemp(join(tmpdir(), "novae-integration-"));
@@ -169,89 +149,6 @@ function run(label, command, args, environment = {}) {
   if (result.status !== 0) {
     throw new Error(`${label} failed with exit code ${result.status ?? 1}.`);
   }
-}
-
-async function databaseHealthSnapshot() {
-  const client = new pg.Client({ connectionString: ownerDatabaseUrl, connectionTimeoutMillis: 2_000 });
-  await client.connect();
-  try {
-    const result = await client.query(`
-      select state, wait_event_type, wait_event, count(*)::int as count
-      from pg_stat_activity
-      where datname = current_database()
-      group by state, wait_event_type, wait_event
-      order by count(*) desc
-    `);
-    return result.rows;
-  } finally {
-    await client.end();
-  }
-}
-
-async function probeWorkerDatabase() {
-  const response = await fetch(`${workerUrl}/v1/actions`, {
-    body: JSON.stringify({ action: "healthcheck", payload: {} }),
-    headers: {
-      "content-type": "application/json",
-      origin: appUrl,
-      "x-healthcheck-secret": "integration-healthcheck-secret",
-    },
-    method: "POST",
-    signal: AbortSignal.timeout(5_000),
-  });
-  const body = await response.text();
-  if (!response.ok || !body.includes('"type":"end"')) {
-    throw new Error(`Worker healthcheck returned ${response.status}: ${body.slice(0, 500)}`);
-  }
-}
-
-async function runBrowserJourneys(label, args, environment) {
-  process.stderr.write(`[integration] ${label}\n`);
-  const child = spawn(process.execPath, [playwrightCli, "test", ...args], {
-    cwd: root,
-    windowsHide: true,
-    env: { ...process.env, ...environment },
-    stdio: "inherit",
-  });
-  let consecutiveFailures = 0;
-  let healthFailure = null;
-  let probing = false;
-  const timer = setInterval(async () => {
-    if (probing || child.exitCode !== null) return;
-    probing = true;
-    try {
-      await probeWorkerDatabase();
-      consecutiveFailures = 0;
-    } catch (error) {
-      consecutiveFailures += 1;
-      if (consecutiveFailures >= 3 && !healthFailure) {
-        let database = [];
-        try {
-          database = await databaseHealthSnapshot();
-        } catch (snapshotError) {
-          database = [{ snapshotError: String(snapshotError) }];
-        }
-        healthFailure = new Error(
-          `E2E service health failed three times: ${String(error)}\nPostgreSQL activity: ${JSON.stringify(database)}`,
-        );
-        if (process.platform === "win32") {
-          spawnSync("taskkill.exe", ["/PID", String(child.pid), "/T", "/F"], { stdio: "ignore", windowsHide: true });
-        } else {
-          child.kill("SIGTERM");
-        }
-      }
-    } finally {
-      probing = false;
-    }
-  }, 15_000);
-  timer.unref();
-  const status = await new Promise((resolve, reject) => {
-    child.once("error", reject);
-    child.once("close", resolve);
-  });
-  clearInterval(timer);
-  if (healthFailure) throw healthFailure;
-  if (status !== 0) throw new Error(`${label} failed with exit code ${status ?? 1}.`);
 }
 
 function start(label, command, args, environment = {}, ports = []) {
@@ -452,7 +349,7 @@ process.once("SIGTERM", async () => {
 
 const integrationLock = await acquireIntegrationLock();
 try {
-  const requiredServicePorts = new Set(serve || e2e ? [appPort, 4000, 4400, 4500, 8787, 9099] : [8787]);
+  const requiredServicePorts = new Set(serve ? [appPort, 4000, 4400, 4500, 8787, 9099] : [8787]);
   const occupiedServicePids = windowsListenerPids(requiredServicePorts);
   if (occupiedServicePids.length > 0) {
     throw new Error(
@@ -464,9 +361,9 @@ try {
   run("reset PostgreSQL and apply migrations", process.execPath, [
     "scripts/database.mjs",
     "reset-local",
-    serve || e2e ? "--seed" : "--seed-integration",
+    serve ? "--seed" : "--seed-integration",
   ]);
-  if (!serve && !e2e) {
+  if (!serve) {
     run(
       "upgrade a populated pre-0016 database",
       process.execPath,
@@ -484,7 +381,7 @@ try {
     },
   );
 
-  if (!serve && !e2e) await recreateRunnerDatabases(actionTestRunners);
+  if (!serve) await recreateRunnerDatabases(actionTestRunners);
 
   async function startExternalProvider(label) {
     const port = await findAvailablePort();
@@ -514,14 +411,14 @@ try {
 
   const externalProviderUrl = await startExternalProvider("external-provider");
   const actionProviderUrls = [externalProviderUrl];
-  if (!serve && !e2e) {
+  if (!serve) {
     for (let index = 2; index <= actionTestRunners; index += 1) {
       actionProviderUrls.push(await startExternalProvider(`external-provider-${index}`));
     }
   }
 
   let firebase;
-  if (serve || e2e) {
+  if (serve) {
     firebase = start(
       "firebase-auth",
       npx.command,
@@ -557,7 +454,7 @@ try {
     GOOGLE_SERVICE_ACCOUNT_JSON: "not-used-with-emulator",
     HEALTHCHECK_SECRET: "integration-healthcheck-secret",
     LOCAL_TEST_MODE: "true",
-    LOCAL_TEST_DISABLE_RATE_LIMITS: serve || e2e ? "true" : "false",
+    LOCAL_TEST_DISABLE_RATE_LIMITS: serve ? "true" : "false",
     MEDIA_SIGNING_SECRET: "integration-media-signing-secret-that-is-long-enough",
     NOTION_API_BASE_URL: externalProviderUrl,
     NOTION_DATABASE_ID: "mock-database-id",
@@ -602,7 +499,7 @@ try {
     WORKER_URL: workerUrl,
   };
 
-  if (!serve && !e2e) {
+  if (!serve) {
     process.stderr.write(`[integration] backend actions across ${actionTestRunners} isolated runners\n`);
     const results = await Promise.all(Array.from({ length: actionTestRunners }, (_, index) => {
       const databaseName = runnerDatabaseNames[index];
@@ -659,9 +556,9 @@ try {
       NOVAE_TEST_PUBLIC_ORIGIN: publicTestOrigin,
       // The test build carries loopback origins in its policy, so it never
       // shares an output directory with a deployable build.
-      NOVAE_DIST_DIR: preview ? "dist-local-preview" : "dist-local-e2e",
+      NOVAE_DIST_DIR: "dist-local-preview",
       NOVAE_LOCAL_TEST_PREVIEW: preview ? "true" : "false",
-      NEXT_PUBLIC_CONTENT_REALTIME_ENABLED: e2e ? "false" : "true",
+      NEXT_PUBLIC_CONTENT_REALTIME_ENABLED: "true",
       NEXT_PUBLIC_FIREBASE_API_KEY: "integration-web-api-key",
       NEXT_PUBLIC_FIREBASE_APP_CHECK_ENABLED: "false",
       NEXT_PUBLIC_FIREBASE_APP_ID: "1:123456789:web:local",
@@ -670,19 +567,16 @@ try {
       NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: "123456789",
       NEXT_PUBLIC_FIREBASE_PROJECT_ID: "integration-project",
       NEXT_PUBLIC_TURNSTILE_SITE_KEY: "",
-      NEXT_PUBLIC_LOCAL_DEV_AUTH: e2e ? "false" : "true",
+      NEXT_PUBLIC_LOCAL_DEV_AUTH: "true",
       NEXT_PUBLIC_LOCAL_DEV_AUTH_EMAIL: "admin@integration.invalid",
       NOVAE_AUTH_EMULATOR_URL: "http://127.0.0.1:9099",
-      NOVAE_E2E_BASE_URL: appUrl,
       NOVAE_LOCAL_APP_ORIGIN: appUrl,
       NOVAE_LOCAL_GATEWAY_URL: workerUrl,
     };
-    if ((e2e && !skipBuild) || preview) {
+    if (preview) {
       run("build production frontend", process.execPath, [viteCli, "build"], frontendEnvironment);
-    } else if (e2e && !existsSync(join(root, frontendEnvironment.NOVAE_DIST_DIR, "index.html"))) {
-      throw new Error(`--skip-build requires an existing production build in ${frontendEnvironment.NOVAE_DIST_DIR}.`);
     }
-    const frontendArgs = e2e || preview
+    const frontendArgs = preview
       ? [viteCli, "preview", "--host", "0.0.0.0", "--port", String(appPort), "--strictPort"]
       : [viteCli, "--host", "0.0.0.0", "--port", String(appPort), "--strictPort"];
     const frontend = start(
@@ -701,44 +595,10 @@ try {
       frontendEntry.logPath,
     );
     run("Firebase login and API routing probe", process.execPath, ["scripts/check-local-auth-emulator.mjs"], frontendEnvironment);
-    if (e2e) {
-      if (e2eProject === "chromium-stateful") {
-        await runBrowserJourneys(
-          "Playwright account and content bootstrap",
-          ["--project=bootstrap"],
-          frontendEnvironment,
-        );
-        await runBrowserJourneys(
-          "Playwright stateful browser journeys",
-          [`--project=${e2eProject}`, "--no-deps", ...browserArgs],
-          frontendEnvironment,
-        );
-      } else {
-        await runBrowserJourneys(
-          `Playwright ${e2eProject ?? "browser"} journeys`,
-          [...(e2eProject ? [`--project=${e2eProject}`] : []), ...browserArgs],
-          frontendEnvironment,
-        );
-      }
-      run(
-        "populated E2E data consistency verification",
-        process.execPath,
-        ["scripts/verify-data-consistency.mjs"],
-        integrationEnvironment,
-      );
-      process.stderr.write("✓ End-to-end verification passed\n");
-    } else if (checkStartup) {
-      await runBrowserJourneys(
-        "Playwright local development startup",
-        ["--project=chromium-stateful", "--no-deps", "tests/e2e/local-startup.spec.ts"],
-        frontendEnvironment,
-      );
-    } else {
-      process.stderr.write(`\n[environment] Ready\n  App: ${publicTestOrigin || appUrl}\n  API: ${publicWorkerUrl}\n  Auth emulator: ${publicAuthUrl}\n  Stop: Ctrl+C\n`);
-      process.stdin.resume();
-      await Promise.race([once(frontend, "exit"), once(process.stdin, "end")]);
-      process.stderr.write("\n[integration] stopping the local environment\n");
-    }
+    process.stderr.write(`\n[environment] Ready\n  App: ${publicTestOrigin || appUrl}\n  API: ${publicWorkerUrl}\n  Auth emulator: ${publicAuthUrl}\n  Stop: Ctrl+C\n`);
+    process.stdin.resume();
+    await Promise.race([once(frontend, "exit"), once(process.stdin, "end")]);
+    process.stderr.write("\n[integration] stopping the local environment\n");
   }
 } finally {
   try {

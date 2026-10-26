@@ -67,7 +67,7 @@ flowchart LR
 | 非同步與即時 | Cloudflare Queues、Durable Objects | Event delivery、背景批次、WebSocket、業務 rate limit |
 | 資料庫 | Neon PostgreSQL 17、`pg` | 交易、RPC、RBAC、稽核與資料保留 |
 | 媒體與整合 | Cloudinary、Notion API（選用） | 簽名圖片與營運紀錄副本 |
-| 工具與測試 | Bun 1.4、Vitest 4、Playwright 1.63、ESLint 9 | 產物生成、靜態檢查、整合與瀏覽器測試 |
+| 工具與測試 | Bun 1.4、Vitest 4、ESLint 9 | 產物生成、靜態檢查、單元與整合測試 |
 
 Novae 沒有接入生成式 AI 模型；目前的自動化集中在事件投遞、資料維護與部署驗證。
 
@@ -93,7 +93,7 @@ bun run test:env
 ```bash
 bun run verify:local        # 前端、型別、lint、unit、architecture、build、audit
 bun run verify:integration  # PostgreSQL、Worker、權限、RPC、Queue、Realtime
-bun run verify:all          # local + integration + Playwright E2E
+bun run verify:all          # local + integration
 ```
 
 ## 文件

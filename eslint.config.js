@@ -49,7 +49,6 @@ export default [
       "temp/**",
       ".impeccable/**",
       "node_modules/**",
-      "playwright-report/**",
       "test-results/**",
       "cloudflare/**",
       "vite.config.js",
