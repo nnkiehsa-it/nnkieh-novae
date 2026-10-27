@@ -1,7 +1,7 @@
 import type { User } from "firebase/auth";
 import type { PermissionCode, RoleCode } from "@/services/session";
 
-export type StartupPhase = "session" | "account" | "profile" | "access" | "ready";
+type StartupPhase = "session" | "account" | "profile" | "access" | "ready";
 
 export interface SessionState {
   appReady: boolean;

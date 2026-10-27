@@ -5,7 +5,7 @@ import { readSessionStorage, removeSessionStorage, writeSessionStorage } from '@
  * full-page redirect when the browser will not open one. Both land on the same
  * callback route and end as an ID token for Firebase's `signInWithCredential`.
  */
-export const GOOGLE_CALLBACK_PATH = '/auth/google/callback';
+const GOOGLE_CALLBACK_PATH = '/auth/google/callback';
 
 const AUTH_ENDPOINT = 'https://accounts.google.com/o/oauth2/v2/auth';
 const SCOPE = 'openid email profile';
