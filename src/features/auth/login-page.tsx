@@ -37,8 +37,8 @@ export function LoginPage() {
     void navigate(`${target.pathname}${target.search}${target.hash}`, { replace: true });
   }, [initialized, navigate, roleLoading, search, setupCompleted, startupError, user]);
 
-  if (startupError) return <StartupScreen error={startupError} onRetry={session.retryStartup} onSignOut={session.logout} steps={session.startupSteps} />;
-  if (!initialized || user) return <StartupScreen steps={session.startupSteps} />;
+  if (startupError) return <StartupScreen error={startupError} onRetry={session.retryStartup} onSignOut={session.logout} />;
+  if (!initialized || user) return <StartupScreen />;
 
   const checking = entrance.phase === "checking";
   const busy = checking || session.loginBusy;

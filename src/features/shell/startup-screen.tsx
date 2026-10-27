@@ -1,19 +1,10 @@
 import * as React from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { toast } from "sonner";
-import { useI18n, type MessageKey } from "@/i18n";
-import type { StartupPhase } from "@/hooks/session-state";
+import { useI18n } from "@/i18n";
 import { timing } from "@/lib/motion-timing";
 import { Button } from "@/ui/button";
 import { BrandLockup } from "./brand";
-
-const PHASE_LABELS = {
-  session: "ui.app.startup.session",
-  account: "ui.app.startup.account",
-  profile: "ui.app.startup.profile",
-  access: "ui.app.startup.access",
-  ready: "ui.app.startup.ready",
-} as const satisfies Record<StartupPhase, MessageKey>;
 
 /**
  * One line saying what is under way. When the work moves on, the old words
@@ -51,12 +42,11 @@ export function LaunchFrame({ children }: { children: React.ReactNode }) {
   );
 }
 
-/** What fills the screen while the session is restored, or why it could not be. */
-export function StartupScreen({ error, onRetry, onSignOut, steps }: {
+/** The brand mark while the session is restored, or why it could not be. */
+export function StartupScreen({ error, onRetry, onSignOut }: {
   error?: string;
   onRetry?: () => Promise<void>;
   onSignOut?: () => Promise<void>;
-  steps: readonly StartupPhase[];
 }) {
   const { t } = useI18n();
   const [signingOut, setSigningOut] = React.useState(false);
@@ -84,9 +74,7 @@ export function StartupScreen({ error, onRetry, onSignOut, steps }: {
               ) : null}
             </div>
           </div>
-        ) : (
-          <TurnOverLine label={t(PHASE_LABELS[steps.at(-1) ?? "session"])} step={steps.at(-1) ?? "session"} />
-        )}
+        ) : null}
       </LaunchFrame>
     </div>
   );

@@ -58,7 +58,7 @@ export function ProtectedApp() {
             exit={{ opacity: 0, transition: timing("controlExit", "depart") }}
             key="startup"
           >
-            <StartupScreen error={startupError} onRetry={session.retryStartup} onSignOut={session.logout} steps={session.startupSteps} />
+            <StartupScreen error={startupError} onRetry={session.retryStartup} onSignOut={session.logout} />
           </motion.div>
         ) : null}
       </AnimatePresence>
