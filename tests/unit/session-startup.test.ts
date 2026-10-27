@@ -41,7 +41,7 @@ vi.mock("@/services/uploads", () => ({ clearResolvedUploadCache: vi.fn() }));
 vi.mock("@/services/users-write", () => ({ cacheUserAvatar: vi.fn() }));
 vi.mock("@/services/notifications", () => ({ seedNotificationUnreadHint: vi.fn() }));
 vi.mock("@/hooks/use-categories", () => ({ clearCategoryCatalog: vi.fn(), seedCategoryCatalog: vi.fn() }));
-vi.mock("@/services/session-auth", () => ({ consumePreparedLoginEntrance: () => false, verifyRestoredSession: mocks.restore }));
+vi.mock("@/services/session-auth", () => ({ completeGoogleRedirectSignIn: async () => "", consumePreparedLoginEntrance: () => false, verifyRestoredSession: mocks.restore }));
 vi.mock("@/services/session-validation", () => ({ validateBasicUser: () => ({ ok: true }), validateUserAgainstToken: mocks.validate }));
 
 const access: SessionAccess = {

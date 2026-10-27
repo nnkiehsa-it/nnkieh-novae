@@ -29,6 +29,7 @@ import {
   seedCategoryCatalog,
 } from "@/hooks/use-categories";
 import {
+  completeGoogleRedirectSignIn,
   consumePreparedLoginEntrance,
   verifyRestoredSession,
 } from "@/services/session-auth";
@@ -330,6 +331,7 @@ export async function initializeSession(
       return;
     }
   }
+  pendingAuthRejection = await completeGoogleRedirectSignIn();
   onAuthStateChanged(
     auth,
     async (user) => {

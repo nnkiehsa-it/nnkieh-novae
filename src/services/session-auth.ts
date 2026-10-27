@@ -1,5 +1,6 @@
 import { FirebaseError } from "firebase/app";
 import {
+  type Auth,
   GoogleAuthProvider,
   signInWithCredential,
   signInWithPopup,
@@ -7,9 +8,10 @@ import {
 } from "firebase/auth";
 import { auth, allowedDomain } from "@/lib/firebase";
 import {
-  ensureGoogleIdentityLoaded,
   GoogleIdentityError,
-  requestGoogleAccessToken,
+  requestGoogleIdToken,
+  startGoogleRedirect,
+  takeGoogleRedirectResult,
 } from "@/lib/google-identity";
 import { readLocalStorage, writeLocalStorage } from "@/lib/browser-storage";
 import { withRequestTimeout } from "@/lib/request";
@@ -107,11 +109,6 @@ export async function prepareGoogleLoginEntrance(options: {
     return "auth.systemBrowserRequired";
   if (loginEntranceVerified()) return "";
 
-  const googleReady = authEmulatorUrl
-    ? Promise.resolve()
-    : ensureGoogleIdentityLoaded();
-  void googleReady.catch(() => undefined);
-
   try {
     if (!authEmulatorUrl && hasApiGatewayConfig()) {
       const verified = await verifyTurnstileEndpoint({
@@ -122,7 +119,6 @@ export async function prepareGoogleLoginEntrance(options: {
       });
       if (!verified) return "auth.securityCheckFailed";
     }
-    await googleReady;
     loginEntrancePrepared = true;
     return "";
   } catch (error) {
@@ -172,7 +168,7 @@ function loginError(error: unknown) {
       return "auth.theLoginWindowHasBeenClosedPleaseTryAgain";
     if (error.code === "popup_blocked") return "auth.popupBlocked";
     if (error.code === "timeout") return "auth.loginReplyTimedOut";
-    if (error.code === "script_load_failed" || error.code === "unavailable")
+    if (error.code === "unavailable")
       return "auth.loginWidgetInitFailed";
   }
   if (error instanceof FirebaseError) {
@@ -206,6 +202,26 @@ function loginError(error: unknown) {
   return "auth.loginFailedPleaseTryAgainLater";
 }
 
+function signInWithGoogleIdToken(firebaseAuth: Auth, idToken: string) {
+  return withRequestTimeout(
+    () => signInWithCredential(firebaseAuth, GoogleAuthProvider.credential(idToken)),
+    { label: "auth.loginVerification" },
+  );
+}
+
+/** Finishes a sign-in that left the page for Google; returns an error key, or "" when none or done. */
+export async function completeGoogleRedirectSignIn() {
+  if (!auth || !googleClientId) return "";
+  try {
+    const idToken = takeGoogleRedirectResult(googleClientId);
+    if (idToken) await signInWithGoogleIdToken(auth, idToken);
+    return "";
+  } catch (error) {
+    sessionDebug("redirect login failed", error);
+    return loginError(error);
+  }
+}
+
 export async function loginWithGoogle(
   options: {
     selectAccount?: boolean;
@@ -237,17 +253,17 @@ export async function loginWithGoogle(
       );
       return "";
     }
-    const accessToken = await requestGoogleAccessToken({
-      clientId: googleClientId,
-      hd: allowedDomain || undefined,
-    });
-    await withRequestTimeout(
-      () => signInWithCredential(
-        firebaseAuth,
-        GoogleAuthProvider.credential(null, accessToken),
-      ),
-      { label: "auth.loginVerification" },
-    );
+    const hd = allowedDomain || undefined;
+    let idToken: string;
+    try {
+      idToken = await requestGoogleIdToken({ clientId: googleClientId, hd });
+    } catch (error) {
+      if (!(error instanceof GoogleIdentityError) || error.code !== "popup_blocked") throw error;
+      // The browser refused the popup; leave the page for Google and finish on return.
+      startGoogleRedirect({ clientId: googleClientId, hd });
+      return "";
+    }
+    await signInWithGoogleIdToken(firebaseAuth, idToken);
     return "";
   } catch (error) {
     sessionDebug("login failed", error);
