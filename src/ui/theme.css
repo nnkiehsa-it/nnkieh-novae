@@ -83,12 +83,9 @@
 :root[data-theme="light"] {
   color-scheme: light;
 
-  /* A clear sky: mid blue at the top, thinning to near white toward the foot. */
+  /* A flat pale canvas; only the dark theme carries a gradient. */
   --canvas: #e6edf7;
-  --canvas-gradient:
-    radial-gradient(90% 40% at 20% 0%, rgb(96 128 186 / 45%), transparent 70%),
-    radial-gradient(120% 35% at 50% 78%, rgb(255 255 255 / 70%), transparent 70%),
-    linear-gradient(180deg, #8ea8d3 0%, #b4c7e5 24%, #d6e1f1 52%, #e9eff8 80%, #eef3f9 100%);
+  --canvas-gradient: none;
   --canvas-foot: #eef3f9;
 
   --surface: #ffffff;
